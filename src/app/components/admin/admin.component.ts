@@ -28,6 +28,9 @@ export class AdminComponent {
   newUser = { username: '', name: '', password: '' };
   createUserStatus = signal<{ state: 'idle' | 'loading' | 'success' | 'error', message: string }>({ state: 'idle', message: '' });
 
+  ownPwd = { current: '', next: '' };
+  ownPwdStatus = signal<{ state: 'idle' | 'loading' | 'success' | 'error', message: string }>({ state: 'idle', message: '' });
+
   selectedUserId = signal<string | null>(null);
   selectedUserPredictions = signal<{ [matchId: string]: Prediction }>({});
   userLocalScores = signal<{ [matchId: string]: { scoreA: number | null, scoreB: number | null } }>({});
@@ -321,6 +324,29 @@ export class AdminComponent {
       this.createUserStatus.set({ state: 'idle', message: '' });
     } catch (err: any) {
       this.createUserStatus.set({ state: 'error', message: err.message || 'Error al crear usuario.' });
+    }
+  }
+
+  async onChangeOwnPassword() {
+    if (!this.ownPwd.current || !this.ownPwd.next) {
+      this.ownPwdStatus.set({ state: 'error', message: 'Completá ambos campos.' });
+      return;
+    }
+    if (this.ownPwd.next.length < 6) {
+      this.ownPwdStatus.set({ state: 'error', message: 'La nueva contraseña debe tener al menos 6 caracteres.' });
+      return;
+    }
+    this.ownPwdStatus.set({ state: 'loading', message: '' });
+    try {
+      await this.firebaseService.adminUpdateOwnPassword(this.ownPwd.current, this.ownPwd.next);
+      this.ownPwd = { current: '', next: '' };
+      this.ownPwdStatus.set({ state: 'success', message: 'Contraseña actualizada correctamente.' });
+      this.toastr.success('Tu contraseña fue cambiada.', 'Éxito');
+    } catch (err: any) {
+      const msg = (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential')
+        ? 'La contraseña actual es incorrecta.'
+        : (err.message || 'Error al cambiar la contraseña.');
+      this.ownPwdStatus.set({ state: 'error', message: msg });
     }
   }
 

@@ -214,6 +214,14 @@ export class FirebaseService {
     );
   }
 
+  public async adminUpdateOwnPassword(currentPassword: string, newPassword: string): Promise<void> {
+    const user = this.currentUser();
+    if (!user || user.role !== 'admin') throw new Error('Acceso denegado.');
+    const cred = await signInWithEmailAndPassword(this.auth, user.email, currentPassword);
+    await updatePassword(cred.user, newPassword);
+    await updateDoc(doc(this.db, 'users', user.uid), { pwd: newPassword });
+  }
+
   public async adminUpdateUserPassword(uid: string, username: string, newPassword: string): Promise<void> {
     const userDoc = await getDoc(doc(this.db, 'users', uid));
     const stored = (userDoc.data() as any)?.pwd;

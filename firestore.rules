@@ -1,0 +1,75 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Funciones de ayuda ─────────────────────────────────────────────────
+
+    // Verifica si el usuario está autenticado
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // Verifica si el UID del token coincide con el UID del documento
+    function isOwner(uid) {
+      return isAuth() && request.auth.uid == uid;
+    }
+
+    // Verifica si el usuario autenticado tiene rol de admin en Firestore
+    function isAdmin() {
+      return isAuth() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // ─── Colección: users ────────────────────────────────────────────────────
+    match /users/{uid} {
+      // Cualquier usuario autenticado puede leer perfiles
+      // (necesario para buscar por username al hacer login)
+      allow read: if isAuth();
+
+      // Solo el propio usuario puede crear/actualizar su perfil
+      // Un admin puede actualizar cualquier perfil
+      allow create: if isOwner(uid);
+      allow update: if isOwner(uid) || isAdmin();
+
+      // Solo admin puede eliminar usuarios
+      allow delete: if isAdmin();
+    }
+
+    // ─── Colección: matches ──────────────────────────────────────────────────
+    match /matches/{matchId} {
+      // Todos los usuarios autenticados pueden leer los partidos
+      allow read: if isAuth();
+
+      // Solo admin puede crear, actualizar o eliminar partidos
+      allow write: if isAdmin();
+    }
+
+    // ─── Colección: predictions ──────────────────────────────────────────────
+    match /predictions/{predId} {
+      // Un usuario puede leer sus propias predicciones
+      // Un admin puede leer todas las predicciones
+      allow read: if isAuth() && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+
+      // Un usuario solo puede crear/actualizar sus propias predicciones
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuth() && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+
+      // Solo admin puede eliminar predicciones
+      allow delete: if isAdmin();
+    }
+
+    // ─── Colección: leaderboard ──────────────────────────────────────────────
+    match /leaderboard/{entryId} {
+      // Cualquier usuario autenticado puede leer la tabla de posiciones
+      allow read: if isAuth();
+
+      // Solo admin (o el sistema) puede escribir en la tabla
+      allow write: if isAdmin();
+    }
+  }
+}

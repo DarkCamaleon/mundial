@@ -1,0 +1,357 @@
+<div class="space-y-6">
+
+  <!-- Group Selection Tabs -->
+  <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 shadow-lg backdrop-blur-md">
+    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2 px-1">Seleccionar Grupo</p>
+    <div class="grid grid-cols-6 sm:grid-cols-12 gap-2">
+      @for (g of groups; track g) {
+        <button
+          type="button"
+          (click)="selectGroup(g)"
+          class="py-2 text-sm font-bold rounded-lg transition-all focus:outline-none cursor-pointer flex items-center justify-center"
+          [ngClass]="{
+            'bg-gradient-to-r from-emerald-600 to-lime-600 text-white shadow-md shadow-emerald-950/40 ring-1 ring-emerald-400/30': selectedGroup() === g,
+            'bg-slate-950/40 hover:bg-slate-950/80 border border-slate-800 text-slate-400 hover:text-white': selectedGroup() !== g
+          }"
+        >
+          {{ g }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Main Layout split: Matches & Standings -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    
+    <!-- LEFT PANEL: Matches list (7 cols) -->
+    <div class="lg:col-span-7 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+          <span class="inline-block w-2.5 h-5 bg-gradient-to-b from-emerald-500 to-lime-500 rounded-sm"></span>
+          <span>Partidos - Grupo {{ selectedGroup() }}</span>
+        </h3>
+        <span class="text-xs text-slate-400 bg-slate-950/50 border border-slate-800 px-2 py-0.5 rounded-full">
+          6 Partidos
+        </span>
+      </div>
+
+      <!-- Matches Grid -->
+      <div class="space-y-3">
+        @for (m of groupMatches(); track m.id) {
+          
+          <!-- Match Card -->
+          <div 
+            class="relative overflow-hidden rounded-xl border p-4 transition-all duration-300"
+            [ngClass]="{
+              'bg-slate-950/20 border-slate-800/80 hover:border-slate-700': m.status === 'pending',
+              'bg-emerald-950/5 border-emerald-900/40': m.status === 'played' && getPredictionPointsInfo(m.id).points > 0,
+              'bg-slate-900/10 border-slate-900': m.status === 'played' && getPredictionPointsInfo(m.id).points === 0,
+              'bg-red-950/5 border-red-950/30 opacity-70': m.status === 'cancelled'
+            }"
+          >
+            <!-- Cancelled Strikethrough effect -->
+            @if (m.status === 'cancelled') {
+              <div class="absolute inset-0 bg-red-950/10 flex items-center justify-center pointer-events-none">
+                <span class="text-red-500/30 font-black tracking-widest text-2xl uppercase select-none rotate-6">Cancelado</span>
+              </div>
+            }
+
+            <!-- Match Header / Status -->
+            <div class="flex items-center justify-between mb-3 text-xs">
+              <span class="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+                Partido {{ m.order }}
+              </span>
+              
+              <!-- Status indicators -->
+              <div class="flex items-center space-x-2">
+                @if (m.status === 'pending') {
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400">
+                    Pendiente
+                  </span>
+                } @else if (m.status === 'played') {
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800/20">
+                    Finalizado
+                  </span>
+                } @else if (m.status === 'cancelled') {
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-950/50 text-red-400 border border-red-900/20">
+                    No computa
+                  </span>
+                }
+
+                <!-- Save Status Loader -->
+                @if (saveStatus()[m.id] === 'saving') {
+                  <span class="text-[10px] text-emerald-400 animate-pulse flex items-center">
+                    <svg class="animate-spin -ml-1 mr-1.5 h-3.5 w-3.5 text-emerald-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Guardando...
+                  </span>
+                } @else if (saveStatus()[m.id] === 'saved') {
+                  <span class="text-[10px] text-lime-400 flex items-center font-semibold">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                    ¡Guardado!
+                  </span>
+                } @else if (saveStatus()[m.id] === 'error') {
+                  <span class="text-[10px] text-red-400 font-semibold">Error al guardar</span>
+                }
+              </div>
+            </div>
+
+            <!-- Team Scores layout -->
+            <div class="grid grid-cols-12 items-center gap-2">
+              
+              <!-- Team A (Left) -->
+              <div class="col-span-4 flex items-center space-x-2.5 justify-end">
+                <span class="text-sm font-bold text-slate-100 uppercase tracking-tight text-right truncate">
+                  {{ m.teamA }}
+                </span>
+                <!-- Custom emoji flags or styling representation -->
+                <span class="text-xl shrink-0 select-none">⚽</span>
+              </div>
+
+              <!-- Score inputs / displays (col-span-4) -->
+              <div class="col-span-4 flex items-center justify-center">
+
+                <!-- PLAYED: show official vs prediction -->
+                @if (m.status === 'played') {
+                  <div class="flex flex-col items-center gap-1 w-full">
+                    <!-- Official result -->
+                    <div class="flex flex-col items-center">
+                      <span class="text-[8px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">Resultado</span>
+                      <div class="flex items-center gap-1">
+                        <span class="w-9 h-8 flex items-center justify-center font-black text-base rounded-lg"
+                          [ngClass]="m.scoreA !== null ? 'bg-slate-700 border border-slate-500 text-white' : 'bg-slate-900 border border-slate-800 text-slate-600'">
+                          {{ m.scoreA !== null ? m.scoreA : '?' }}
+                        </span>
+                        <span class="text-slate-400 font-black text-xs">-</span>
+                        <span class="w-9 h-8 flex items-center justify-center font-black text-base rounded-lg"
+                          [ngClass]="m.scoreB !== null ? 'bg-slate-700 border border-slate-500 text-white' : 'bg-slate-900 border border-slate-800 text-slate-600'">
+                          {{ m.scoreB !== null ? m.scoreB : '?' }}
+                        </span>
+                      </div>
+                    </div>
+                    <!-- User prediction -->
+                    <div class="flex flex-col items-center">
+                      <span class="text-[8px] font-bold uppercase tracking-wider text-slate-600 mb-0.5">Tu pronóstico</span>
+                      <div class="flex items-center gap-1">
+                        <span class="w-9 h-7 flex items-center justify-center bg-slate-950 border border-slate-800 font-bold text-sm rounded-lg"
+                          [ngClass]="getPredictionPointsInfo(m.id).prediction ? 'text-emerald-400' : 'text-slate-700'">
+                          {{ getScore(m.id, 'A') !== '' ? getScore(m.id, 'A') : '–' }}
+                        </span>
+                        <span class="text-slate-700 font-bold text-xs">-</span>
+                        <span class="w-9 h-7 flex items-center justify-center bg-slate-950 border border-slate-800 font-bold text-sm rounded-lg"
+                          [ngClass]="getPredictionPointsInfo(m.id).prediction ? 'text-emerald-400' : 'text-slate-700'">
+                          {{ getScore(m.id, 'B') !== '' ? getScore(m.id, 'B') : '–' }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                }
+
+                <!-- CANCELLED -->
+                @else if (m.status === 'cancelled') {
+                  <div class="flex items-center space-x-1.5">
+                    <div class="w-10 py-1 bg-red-950/10 border border-red-950/20 text-center text-sm font-bold text-red-500/40 rounded-lg select-none">X</div>
+                    <span class="text-red-550/30 font-bold text-xs">:</span>
+                    <div class="w-10 py-1 bg-red-950/10 border border-red-950/20 text-center text-sm font-bold text-red-500/40 rounded-lg select-none">X</div>
+                  </div>
+                }
+
+                <!-- PENDING: inputs -->
+                @else {
+                  <div class="flex items-center space-x-1.5">
+                    <input
+                      type="number"
+                      min="0"
+                      max="20"
+                      [value]="getScore(m.id, 'A')"
+                      (input)="onScoreChange(m.id, 'A', $event)"
+                      class="w-10 h-9 bg-slate-950 border border-slate-850 hover:border-slate-700 focus:border-emerald-500 text-center text-sm font-extrabold text-white rounded-lg focus:ring-1 focus:ring-emerald-500 outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <span class="text-slate-500 font-bold text-xs">:</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="20"
+                      [value]="getScore(m.id, 'B')"
+                      (input)="onScoreChange(m.id, 'B', $event)"
+                      class="w-10 h-9 bg-slate-950 border border-slate-850 hover:border-slate-700 focus:border-emerald-500 text-center text-sm font-extrabold text-white rounded-lg focus:ring-1 focus:ring-emerald-500 outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                  </div>
+                }
+
+              </div>
+
+              <!-- Team B (Right) -->
+              <div class="col-span-4 flex items-center space-x-2.5 justify-start">
+                <span class="text-xl shrink-0 select-none">⚽</span>
+                <span class="text-sm font-bold text-slate-100 uppercase tracking-tight text-left truncate">
+                  {{ m.teamB }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Points Awarded Badge for Played Matches -->
+            @if (m.status === 'played') {
+              <div class="mt-3 pt-2.5 border-t border-slate-900 flex justify-center">
+                @if (m.scoreA === null || m.scoreB === null) {
+                  <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-bold bg-slate-900 text-slate-400 border border-slate-700">
+                    ⏳ El admin aún no publicó el resultado
+                  </span>
+                } @else if (getPredictionPointsInfo(m.id); as info) {
+                  @if (!info.prediction) {
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-bold bg-amber-950/30 text-amber-500/80 border border-amber-900/30">
+                      ⚠️ No ingresaste predicción — 0 pts
+                    </span>
+                  } @else if (info.points === 3) {
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-extrabold bg-gradient-to-r from-emerald-500/20 to-lime-500/20 text-lime-400 border border-lime-500/30 shadow-sm shadow-lime-950/30">
+                      🌟 +3 pts — ¡Marcador exacto!
+                    </span>
+                  } @else if (info.points === 2) {
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-800/40">
+                      ✅ +2 pts — Resultado correcto
+                    </span>
+                  } @else {
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold bg-slate-900 text-slate-500 border border-slate-800">
+                      ❌ 0 pts — Resultado incorrecto
+                    </span>
+                  }
+                }
+              </div>
+            }
+          </div>
+
+        } @empty {
+          <div class="text-center py-8 bg-slate-950/20 border border-slate-900 rounded-xl">
+            <p class="text-sm text-slate-500">Cargando partidos...</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL: Standings Table (5 cols) -->
+    <div class="lg:col-span-5 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+          <span class="inline-block w-2.5 h-5 bg-gradient-to-b from-blue-500 to-indigo-500 rounded-sm"></span>
+          <span>Tabla del Grupo {{ selectedGroup() }}</span>
+        </h3>
+        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-950/50 border border-slate-850 px-2 py-0.5 rounded">
+          En Tiempo Real
+        </span>
+      </div>
+
+      <!-- Standing Card Table -->
+      <div class="bg-slate-900/40 border border-slate-800/80 rounded-xl overflow-hidden shadow-lg backdrop-blur-md">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-950/60 border-b border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <th class="py-3 px-3 text-center w-10">Pos</th>
+                <th class="py-3 px-2">Equipo</th>
+                <th class="py-3 px-2 text-center w-8">PJ</th>
+                <th class="py-3 px-2 text-center w-8">G</th>
+                <th class="py-3 px-2 text-center w-8">E</th>
+                <th class="py-3 px-2 text-center w-8">P</th>
+                <th class="py-3 px-2 text-center w-12">GF:GC</th>
+                <th class="py-3 px-2 text-center w-8">DG</th>
+                <th class="py-3 px-3 text-center w-12 text-emerald-400 font-extrabold">Pts</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-900 text-xs">
+              @for (s of groupStandings(); track s.team; let idx = $index) {
+                <tr class="hover:bg-slate-950/30 transition-colors" [ngClass]="{'bg-slate-950/10': idx % 2 === 0}">
+                  <!-- Pos with color indicator for top 2 -->
+                  <td class="py-3 px-3 text-center font-bold">
+                    <span 
+                      class="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px]"
+                      [ngClass]="{
+                        'bg-emerald-950 text-emerald-400 border border-emerald-800/40': idx < 2,
+                        'text-slate-500': idx >= 2
+                      }"
+                    >
+                      {{ idx + 1 }}
+                    </span>
+                  </td>
+                  
+                  <!-- Team name with qualification dot -->
+                  <td class="py-3 px-2 font-bold text-slate-100 flex items-center space-x-1.5">
+                    @if (idx < 2) {
+                      <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping" title="Clasificado a 8vos"></span>
+                    }
+                    <span class="truncate uppercase tracking-tight">{{ s.team }}</span>
+                  </td>
+
+                  <!-- Stats -->
+                  <td class="py-3 px-2 text-center text-slate-300 font-medium">{{ s.played }}</td>
+                  <td class="py-3 px-2 text-center text-slate-400">{{ s.won }}</td>
+                  <td class="py-3 px-2 text-center text-slate-400">{{ s.drawn }}</td>
+                  <td class="py-3 px-2 text-center text-slate-400">{{ s.lost }}</td>
+                  <td class="py-3 px-2 text-center text-slate-400 font-mono text-[10px]">{{ s.gf }}:{{ s.ga }}</td>
+                  <td class="py-3 px-2 text-center font-semibold" [ngClass]="{'text-emerald-400': s.gd > 0, 'text-red-400': s.gd < 0, 'text-slate-400': s.gd === 0}">
+                    {{ s.gd > 0 ? '+' + s.gd : s.gd }}
+                  </td>
+
+                  <!-- Points -->
+                  <td class="py-3 px-3 text-center font-extrabold text-sm text-white bg-slate-950/30">
+                    {{ s.points }}
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="9" class="py-8 text-center text-slate-500">Cargando clasificación...</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Standing footer notes -->
+        <div class="p-3 bg-slate-950/60 border-t border-slate-900 text-[10px] text-slate-500 flex justify-between">
+          <span class="flex items-center">
+            <span class="w-2 h-2 bg-emerald-400 rounded-full mr-1.5"></span>
+            Clasifica a Octavos de Final
+          </span>
+          <span>PJ: Jugados | DG: Dif. Goles</span>
+        </div>
+      </div>
+
+      <!-- Group Points Summary -->
+      @if (!firebaseService.currentUser()?.role || firebaseService.currentUser()?.role !== 'admin') {
+        <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-3">Tus puntos — Grupo {{ selectedGroup() }}</p>
+          <div class="grid grid-cols-4 gap-2">
+            <div class="bg-slate-950/60 rounded-lg p-3 text-center">
+              <p class="text-[9px] font-bold uppercase tracking-wider text-emerald-500 mb-1">Total</p>
+              <p class="text-2xl font-extrabold text-white">{{ groupPointsSummary().total }}</p>
+            </div>
+            <div class="bg-slate-950/60 rounded-lg p-3 text-center">
+              <p class="text-[9px] font-bold uppercase tracking-wider text-emerald-400 mb-1">Exactos</p>
+              <p class="text-xl font-bold text-emerald-400">{{ groupPointsSummary().exact }}</p>
+              <p class="text-[9px] text-slate-600">+3 c/u</p>
+            </div>
+            <div class="bg-slate-950/60 rounded-lg p-3 text-center">
+              <p class="text-[9px] font-bold uppercase tracking-wider text-blue-400 mb-1">Resultado</p>
+              <p class="text-xl font-bold text-blue-400">{{ groupPointsSummary().outcome }}</p>
+              <p class="text-[9px] text-slate-600">+2 c/u</p>
+            </div>
+            <div class="bg-slate-950/60 rounded-lg p-3 text-center">
+              <p class="text-[9px] font-bold uppercase tracking-wider text-slate-500 mb-1">Incorrectos</p>
+              <p class="text-xl font-bold text-slate-500">{{ groupPointsSummary().incorrect }}</p>
+              <p class="text-[9px] text-slate-600">0 pts</p>
+            </div>
+          </div>
+          @if (groupPointsSummary().pending > 0) {
+            <p class="text-[10px] text-slate-600 text-center mt-2">{{ groupPointsSummary().pending }} partido(s) pendiente(s) en este grupo</p>
+          }
+        </div>
+      }
+
+    </div>
+
+  </div>
+
+</div>

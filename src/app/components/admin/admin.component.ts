@@ -285,6 +285,18 @@ export class AdminComponent {
     }
   }
 
+  async onLockPredictions(lock: boolean) {
+    try {
+      await this.firebaseService.setLockPredictions(lock);
+      this.toastr.success(
+        lock ? 'Predicciones bloqueadas. Los usuarios no pueden escribir.' : 'Predicciones habilitadas.',
+        lock ? '🔒 Bloqueado' : '🔓 Habilitado'
+      );
+    } catch (err: any) {
+      this.toastr.error(err.message || 'Error al cambiar el estado.', 'Error');
+    }
+  }
+
   // Full reset: delete all users (except admin), predictions, leaderboard
   async onFullReset() {
     const result = await Swal.fire({

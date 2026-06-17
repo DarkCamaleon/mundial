@@ -11,7 +11,7 @@
       <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 shadow-lg">
         <div class="flex items-center justify-between mb-2 px-1">
           <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Seleccionar Grupo</p>
-          <div class="flex gap-2">
+          <div class="flex gap-2 flex-wrap justify-end">
             <button
               type="button"
               (click)="onResetMatches()"
@@ -26,6 +26,23 @@
             >
               🗑️ Borrar datos
             </button>
+            @if (!firebaseService.predictionsLocked()) {
+              <button
+                type="button"
+                (click)="onLockPredictions(true)"
+                class="py-1 px-2.5 text-[10px] bg-slate-950 border border-yellow-900/40 text-yellow-400 hover:bg-yellow-950/20 hover:text-yellow-300 font-bold rounded-lg transition-all cursor-pointer"
+              >
+                🔒 Bloquear predicciones
+              </button>
+            } @else {
+              <button
+                type="button"
+                (click)="onLockPredictions(false)"
+                class="py-1 px-2.5 text-[10px] bg-yellow-950/30 border border-yellow-500/40 text-yellow-300 hover:bg-yellow-950/60 font-bold rounded-lg transition-all cursor-pointer"
+              >
+                🔓 Habilitar predicciones
+              </button>
+            }
           </div>
         </div>
         <div class="grid grid-cols-6 sm:grid-cols-12 gap-2">

@@ -1,5 +1,12 @@
 <div class="space-y-6">
 
+  @if (firebaseService.predictionsLocked() && firebaseService.currentUser()?.role !== 'admin') {
+    <div class="flex items-center gap-2 bg-yellow-950/40 border border-yellow-700/50 rounded-xl px-4 py-2.5">
+      <span class="text-lg">🔒</span>
+      <p class="text-xs font-bold text-yellow-300">Las predicciones están deshabilitadas temporalmente por el administrador.</p>
+    </div>
+  }
+
   <!-- Group Selection Tabs -->
   <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 shadow-lg backdrop-blur-md">
     <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2 px-1">Seleccionar Grupo</p>
@@ -169,7 +176,8 @@
                       max="20"
                       [value]="getScore(m.id, 'A')"
                       (input)="onScoreChange(m.id, 'A', $event)"
-                      class="w-10 h-9 bg-slate-950 border border-slate-850 hover:border-slate-700 focus:border-emerald-500 text-center text-sm font-extrabold text-white rounded-lg focus:ring-1 focus:ring-emerald-500 outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      [disabled]="firebaseService.predictionsLocked() && firebaseService.currentUser()?.role !== 'admin'"
+                      class="w-10 h-9 bg-slate-950 border border-slate-850 hover:border-slate-700 focus:border-emerald-500 text-center text-sm font-extrabold text-white rounded-lg focus:ring-1 focus:ring-emerald-500 outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-40 disabled:cursor-not-allowed"
                     />
                     <span class="text-slate-500 font-bold text-xs">:</span>
                     <input
@@ -178,7 +186,8 @@
                       max="20"
                       [value]="getScore(m.id, 'B')"
                       (input)="onScoreChange(m.id, 'B', $event)"
-                      class="w-10 h-9 bg-slate-950 border border-slate-850 hover:border-slate-700 focus:border-emerald-500 text-center text-sm font-extrabold text-white rounded-lg focus:ring-1 focus:ring-emerald-500 outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      [disabled]="firebaseService.predictionsLocked() && firebaseService.currentUser()?.role !== 'admin'"
+                      class="w-10 h-9 bg-slate-950 border border-slate-850 hover:border-slate-700 focus:border-emerald-500 text-center text-sm font-extrabold text-white rounded-lg focus:ring-1 focus:ring-emerald-500 outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-40 disabled:cursor-not-allowed"
                     />
                   </div>
                 }

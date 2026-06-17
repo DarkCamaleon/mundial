@@ -32,9 +32,12 @@ export class FirebaseService {
   public error = signal<string | null>(null);
   public allUsers = signal<UserProfile[]>([]);
 
+  public predictionsLocked = signal<boolean>(false);
+
   private unsubMatches: (() => void) | null = null;
   private unsubLeaderboard: (() => void) | null = null;
   private unsubPredictions: (() => void) | null = null;
+  private unsubConfig: (() => void) | null = null;
 
   constructor() {
     this.firebaseApp = getApps().length > 0 ? getApp() : initializeApp(DEFAULT_FIREBASE_CONFIG);
@@ -146,6 +149,12 @@ export class FirebaseService {
         });
       }
 
+      // --- Real-time listener: app config (predictionsLocked) ---
+      this.unsubConfig?.();
+      this.unsubConfig = onSnapshot(doc(this.db, 'config', 'settings'), (snap) => {
+        this.predictionsLocked.set(snap.exists() ? !!snap.data()?.['predictionsLocked'] : false);
+      });
+
       // --- Real-time listener: user's own predictions ---
       this.unsubPredictions?.();
       if (user) {
@@ -212,6 +221,13 @@ export class FirebaseService {
     this.allUsers.update(users =>
       users.map(u => u.uid === uid ? { ...u, name, username: username.toLowerCase() } : u)
     );
+  }
+
+  public async setLockPredictions(locked: boolean): Promise<void> {
+    const user = this.currentUser();
+    if (!user || user.role !== 'admin') throw new Error('Acceso denegado.');
+    await setDoc(doc(this.db, 'config', 'settings'), { predictionsLocked: locked }, { merge: true });
+    this.predictionsLocked.set(locked);
   }
 
   public async adminUpdateOwnPassword(currentPassword: string, newPassword: string): Promise<void> {
@@ -397,6 +413,7 @@ export class FirebaseService {
     this.unsubMatches?.();     this.unsubMatches = null;
     this.unsubLeaderboard?.();  this.unsubLeaderboard = null;
     this.unsubPredictions?.();  this.unsubPredictions = null;
+    this.unsubConfig?.();       this.unsubConfig = null;
     try {
       await signOut(this.auth);
       this.currentUser.set(null);
@@ -413,6 +430,7 @@ export class FirebaseService {
   public async savePrediction(matchId: string, scoreA: number | null, scoreB: number | null): Promise<void> {
     const user = this.currentUser();
     if (!user) throw new Error('Debes iniciar sesión para guardar predicciones.');
+    if (this.predictionsLocked() && user.role !== 'admin') throw new Error('Las predicciones están bloqueadas por el administrador.');
 
     const match = this.matches().find(m => m.id === matchId);
     if (!match) throw new Error('Partido no encontrado.');

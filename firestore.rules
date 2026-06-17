@@ -63,6 +63,14 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // ─── Colección: config ───────────────────────────────────────────────────
+    match /config/{docId} {
+      // Cualquier usuario autenticado puede leer la configuración
+      allow read: if isAuth();
+      // Solo admin puede escribir configuración
+      allow write: if isAdmin();
+    }
+
     // ─── Colección: leaderboard ──────────────────────────────────────────────
     match /leaderboard/{entryId} {
       // Cualquier usuario autenticado puede leer la tabla de posiciones

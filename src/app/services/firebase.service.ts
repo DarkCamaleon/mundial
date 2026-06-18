@@ -33,6 +33,7 @@ export class FirebaseService {
   public allUsers = signal<UserProfile[]>([]);
 
   public predictionsLocked = signal<boolean>(false);
+  public authReady = signal<boolean>(false);
 
   private unsubMatches: (() => void) | null = null;
   private unsubLeaderboard: (() => void) | null = null;
@@ -77,6 +78,7 @@ export class FirebaseService {
         this.predictions.set([]);
         this.loading.set(false);
       }
+      this.authReady.set(true);
     });
   }
 

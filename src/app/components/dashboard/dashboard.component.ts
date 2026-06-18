@@ -64,7 +64,8 @@ export class DashboardComponent {
     effect(() => {
       const user = this.firebaseService.currentUser();
       const loading = this.firebaseService.loading();
-      if (!user && !loading) {
+      const authReady = this.firebaseService.authReady();
+      if (!user && !loading && authReady) {
         this.router.navigate(['/login']);
         tabInitialized = false;
       } else if (user && !tabInitialized) {

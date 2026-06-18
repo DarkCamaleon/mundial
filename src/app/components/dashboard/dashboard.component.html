@@ -166,7 +166,10 @@
           </div>
           <div>
             <h3 class="text-xs font-bold text-white">{{ currentUser()?.name }}</h3>
-            <span class="text-[8px] font-bold text-slate-500 uppercase tracking-widest">{{ currentUser()?.role }}</span>
+            <span class="text-[8px] font-bold uppercase tracking-widest"
+                  [ngClass]="currentUser()?.role === 'admin' ? 'text-red-400' : 'text-emerald-500'">
+              {{ currentUser()?.role === 'admin' ? 'Administrador' : 'Usuario' }}
+            </span>
           </div>
         </div>
         <div class="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-slate-900 text-center">
